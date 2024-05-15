@@ -1,2 +1,2 @@
 # password_validator
-Small web app which check your compromised password
+Small desktop app coded on Python 3 and Flask Framework. Realesed user authentication and password leaks checker. 
