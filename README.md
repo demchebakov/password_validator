@@ -1,5 +1,5 @@
 # password_validator
-Small desktop app coded in Python 3 using Tkinter. Realized user authentication and password leak detection.
+Small Client-Server app coded in Python 3 using Tkinter and Flask for Server side. Realized user authentication and password leak detection.
 
 For start project locally on your machine. Install Python 3.1x and install additional libraries from requirements.
 
