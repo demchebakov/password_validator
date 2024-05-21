@@ -1,6 +1,8 @@
-import tkinter as tk
-from tkinter import messagebox
+from flask import Flask, render_template, request, redirect, url_for, flash
 import os
+
+app = Flask(__name__)
+app.secret_key = 'your_secret_key'
 
 # Перевірка наявності файлів та їх створення при відсутності
 def check_files():
@@ -8,96 +10,57 @@ def check_files():
         with open('compromised_passwords.txt', 'w') as file:
             file.write("password1\npassword2\npassword3\n")  # Заповнення за замовчуванням
 
+check_files()
+
 # Функція для перевірки логіна та пароля користувача
 def authenticate(username, password):
     # Перевірка логіна та пароля
-    if username == "admin" and password == "admin":
-        return True
-    else:
-        return False
+    return username == "admin" and password == "admin"
 
-# Функція для обробки події натискання кнопки "Увійти"
+# Головна сторінка
+@app.route('/', methods=['GET', 'POST'])
 def login():
-    username = username_entry.get()
-    password = password_entry.get()
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
 
-    # Перевірка логіна та пароля користувача
-    if authenticate(username, password):
-        messagebox.showinfo("Успіх", "Вхід успішний!")
-        open_password_checker_window()
-    else:
-        messagebox.showerror("Помилка", "Неправильний логін або пароль.")
+        if authenticate(username, password):
+            flash("Вхід успішний!", "success")
+            return redirect(url_for('password_checker'))
+        else:
+            flash("Неправильний логін або пароль.", "danger")
 
-# Функція для відкриття вікна перевірки паролів
-def open_password_checker_window():
-    password_checker_window = tk.Toplevel(root)
-    password_checker_window.title("Перевірка паролів")
+    return render_template('login.html')
 
-    # Поля для введення паролю та виводу результату
-    password_label = tk.Label(password_checker_window, text="Введіть пароль:")
-    password_label.pack()
-
-    password_entry = tk.Entry(password_checker_window, show="*")
-    password_entry.pack()
-
-    result_label = tk.Label(password_checker_window, text="")
-    result_label.pack()
-
-    # Функція для перевірки пароля
-    def check_password():
-        entered_password = password_entry.get()
+# Сторінка перевірки паролів
+@app.route('/password_checker', methods=['GET', 'POST'])
+def password_checker():
+    result = ''
+    if request.method == 'POST':
+        entered_password = request.form['password']
         compromised_passwords = set()
 
-        # Завантаження скомпрометованих паролів з файлу
         with open('compromised_passwords.txt', 'r') as file:
             for line in file:
                 compromised_passwords.add(line.strip())
 
-        # Перевірка, чи є введений пароль серед скомпрометованих паролів
         if entered_password in compromised_passwords:
-            result_label.config(text="Ваш пароль небезпечний. Змініть його!")
+            result = "Ваш пароль небезпечний. Змініть його!"
         else:
-            result_label.config(text="Ваш пароль безпечний.")
+            result = "Ваш пароль безпечний."
 
-    check_button = tk.Button(password_checker_window, text="Перевірити", command=check_password)
-    check_button.pack()
+    return render_template('password_checker.html', result=result)
 
-    # Кнопка для виведення скомпрометованих паролів
-    display_button = tk.Button(password_checker_window, text="Вивести скомпрометовані паролі", command=display_compromised_passwords)
-    display_button.pack()
-
-# Функція для виведення скомпрометованих паролів
+# Сторінка виведення скомпрометованих паролів
+@app.route('/display_compromised_passwords')
 def display_compromised_passwords():
     compromised_passwords = []
 
-    # Завантаження скомпрометованих паролів з файлу
     with open('compromised_passwords.txt', 'r') as file:
         for line in file:
             compromised_passwords.append(line.strip())
 
-    # Виведення списку скомпрометованих паролів
-    messagebox.showinfo("Скомпрометовані паролі", "\n".join(compromised_passwords))
+    return render_template('display_compromised_passwords.html', passwords=compromised_passwords)
 
-# Створення головного графічного інтерфейсу
-root = tk.Tk()
-root.title("Авторизація")
-
-# Перевірка наявності файлів та їх створення
-check_files()
-
-# Поля для введення логіна та пароля
-username_label = tk.Label(root, text="Логін:")
-username_label.grid(row=0, column=0, sticky="e")
-username_entry = tk.Entry(root)
-username_entry.grid(row=0, column=1)
-
-password_label = tk.Label(root, text="Пароль:")
-password_label.grid(row=1, column=0, sticky="e")
-password_entry = tk.Entry(root, show="*")
-password_entry.grid(row=1, column=1)
-
-# Кнопка "Увійти"
-login_button = tk.Button(root, text="Увійти", command=login)
-login_button.grid(row=2, column=1, pady=5)
-
-root.mainloop()
+if __name__ == '__main__':
+    app.run(debug=True)
